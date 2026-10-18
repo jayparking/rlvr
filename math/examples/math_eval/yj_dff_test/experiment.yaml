@@ -1,0 +1,47 @@
+# 모든 상대 경로는 이 설정 파일 기준입니다.
+data:
+  train_file: ../data/math/train.jsonl
+  exclude_files: [../data/math500/test.jsonl]
+  levels: [1, 2, 3, 4, 5]
+  # null이면 전체 사용. 작은 실험에서는 그룹별로 같은 개수만 선택합니다.
+  max_per_group: null
+
+groups:
+  easy: [1, 2]
+  medium: [3, 4]
+  hard: [5]
+
+curriculum:
+  order: [easy, medium, hard]
+
+models:
+  v1: Qwen/Qwen2.5-1.5B
+  v2: hkust-nlp/Qwen-2.5-1.5B-SimpleRL-Zoo
+
+training:
+  seed: 42
+  # 반복마다 random 재섞기 / curriculum 쉬움→중간→어려움 재시작
+  repeats_per_problem: 1
+  num_generations: 4
+  max_prompt_length: 1024
+  max_completion_length: 512
+  temperature: 0.8
+  top_p: 0.95
+  learning_rate: 0.000005
+  beta: 0.04
+  save_steps: 250
+  logging_steps: 10
+  bf16: true
+  gradient_checkpointing: true
+  # 첫 버전은 단일 GPU, 문제 1개(답변 G개)당 업데이트 1회입니다.
+  lora:
+    enabled: true
+    r: 16
+    alpha: 32
+    target_modules: [q_proj, k_proj, v_proj, o_proj]
+
+prompt:
+  type: cot
+  apply_chat_template: false
+
+output_dir: runs
