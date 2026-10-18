@@ -55,6 +55,20 @@ class ExperimentTest(unittest.TestCase):
             with self.assertRaises(FileExistsError):
                 save_artifacts(output, self.cfg, self.splits, [])
 
+    def test_unknown_levels_are_excluded_but_still_protect_test_overlap(self):
+        unknown = dict(self.splits["test"][0], id="test/unknown", level=None,
+                       problem="unknown level question", fingerprint=fingerprint("unknown level question"))
+        self.splits["test"].append(unknown)
+        self.splits["train"].append(dict(unknown, id="train/overlap", split="train", level=1))
+        self.splits["train"].append(dict(unknown, id="train/unknown", split="train",
+                                         fingerprint=fingerprint("train unknown"), problem="train unknown"))
+        train, test, stats = prepare(self.cfg, self.splits)
+        self.assertEqual((len(train), len(test)), (300, 90))
+        self.assertTrue(all(r["level"] is not None for r in train + test))
+        self.assertEqual(stats["train"]["removed_duplicates_or_overlap"], 1)
+        self.assertEqual(stats["train"]["removed_unknown_level"], 1)
+        self.assertEqual(stats["test"]["removed_unknown_level"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()

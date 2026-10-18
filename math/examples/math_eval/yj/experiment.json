@@ -12,5 +12,18 @@
   "groups": {"easy": [1, 2], "medium": [3], "hard": [4, 5]},
   "curriculum_order": ["easy", "medium", "hard"],
   "train_per_group": 100,
-  "test_per_group": 30
+  "test_per_group": 30,
+  "training": {
+    "num_generations": 4,
+    "learning_rate": 0.000005,
+    "beta": 0.04,
+    "temperature": 0.8,
+    "top_p": 0.95,
+    "max_prompt_length": 2048,
+    "max_completion_length": 512,
+    "lora_r": 16,
+    "lora_alpha": 32,
+    "lora_target_modules": ["q_proj", "k_proj", "v_proj", "o_proj"],
+    "grading_timeout_seconds": 3
+  }
 }

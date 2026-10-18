@@ -1,0 +1,13 @@
+# Separate Linux/Python 3.10 or 3.11 training environment; keep A100 eval env intact.
+-r requirements.txt
+torch==2.6.0
+trl==0.16.1
+transformers==4.51.3
+accelerate==1.6.0
+peft==0.15.2
+datasets==3.5.0
+numpy>=1.26,<3
+sympy==1.13.1
+antlr4-python3-runtime==4.11.1
+regex
+word2number

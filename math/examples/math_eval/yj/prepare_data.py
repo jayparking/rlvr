@@ -76,7 +76,7 @@ def load_sources(cfg, cache_dir, offline=False):
                 if not problem.strip() or not solution.strip():
                     raise ValueError(f"Empty problem/solution in {filename}:{index}")
                 match = re.fullmatch(r"Level ([1-5])", row["level"])
-                if not match:
+                if not match and row["level"] != "Level ?":
                     raise ValueError(f"Invalid level: {row['level']!r}")
                 # This mirror omits original MATH filenames. Use pinned parquet row IDs.
                 uid = f"{split}/{subject}/{index:05d}"
@@ -84,7 +84,9 @@ def load_sources(cfg, cache_dir, offline=False):
                     "id": uid, "unique_id": uid, "split": split,
                     "source_file": filename, "source_row": index,
                     "problem": problem, "question": problem, "solution": solution,
-                    "subject": subject, "level": int(match[1]),
+                    # Keep unknown-level rows for full split counts and test-overlap
+                    # filtering; they cannot enter a difficulty-balanced sample.
+                    "subject": subject, "level": int(match[1]) if match else None,
                     "fingerprint": fingerprint(problem),
                 })
     if {k: len(v) for k, v in splits.items()} != {"train": 7500, "test": 5000}:
@@ -97,6 +99,7 @@ def select(rows, cfg, split, excluded_hashes=()):
     buckets = {group: [] for group in cfg["curriculum_order"]}
     seen, ids = set(excluded_hashes), set()
     removed = 0
+    unknown_level = 0
     for row in sorted(rows, key=lambda r: r["id"]):
         if row["split"] != split or not row["id"].startswith(split + "/"):
             raise ValueError("Source split/ID mismatch")
@@ -107,6 +110,9 @@ def select(rows, cfg, split, excluded_hashes=()):
             removed += 1
             continue
         seen.add(row["fingerprint"])
+        if row["level"] is None:
+            unknown_level += 1
+            continue
         group = mapping[row["level"]]
         buckets[group].append(dict(row, difficulty=group))
     selected = []
@@ -119,6 +125,7 @@ def select(rows, cfg, split, excluded_hashes=()):
         rng = random.Random(f"{cfg['seed']}:{split}:{group}:selection")
         selected.extend(rng.sample(candidates, count))
     return selected, {"removed_duplicates_or_overlap": removed,
+                      "removed_unknown_level": unknown_level,
                       "available": {k: len(v) for k, v in buckets.items()}}
 
 
